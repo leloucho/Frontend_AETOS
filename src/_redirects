@@ -1,2 +1,2 @@
-/api/* https://courageous-gayleen-aetos-org-6a4ec731.koyeb.app/api/:splat  200
-/* /index.html   200
+/api/* https://courageous-gayleen-aetos-org-6a4ec731.koyeb.app/:splat  200
+/* /index.html  200
