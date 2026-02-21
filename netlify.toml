@@ -1,0 +1,14 @@
+[build]
+  command = "npm ci && npm run build"
+  publish = "dist/aetos-frontend"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://courageous-gayleen-aetos-org-6a4b6cf0.koyeb.app/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
