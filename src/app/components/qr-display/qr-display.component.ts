@@ -142,8 +142,17 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
         this.loadAttendances();
       },
       error: () => {
-        // Si no se puede crear (por horario), intentar cargar si existiera alguna activa
-        this.loadActiveMeeting();
+        this.authService.createMeeting(true).subscribe({
+          next: (data: any) => {
+            this.activeMeeting = data;
+            this.generateQR(data.tokenQr);
+            this.loadAttendanceCount();
+            this.loadAttendances();
+          },
+          error: () => {
+            this.loadActiveMeeting();
+          }
+        });
       }
     });
   }
@@ -243,7 +252,7 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
 
   activateQr(silent: boolean): void {
     this.triedAutoCreate = true;
-    this.authService.createMeeting(!silent).subscribe({
+    this.authService.createMeeting(true).subscribe({
       next: (data: any) => {
         this.activeMeeting = data;
         this.generateQR(data.tokenQr);
