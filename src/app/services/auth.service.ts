@@ -80,8 +80,8 @@ export class AuthService {
     });
   }
 
-  createMeeting(): Observable<any> {
-    return this.http.post(`${this.apiUrl}/leader/meetings`, {}, { headers: this.getHeaders() });
+  createMeeting(force: boolean = false): Observable<any> {
+    return this.http.post(`${this.apiUrl}/leader/meetings`, { force }, { headers: this.getHeaders() });
   }
 
   markAttendance(tokenQr: string): Observable<any> {

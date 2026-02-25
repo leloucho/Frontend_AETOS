@@ -643,18 +643,57 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   
   sendBirthdayMessage(birthday: any): void {
-    const mensaje = `🎉🎂 *¡Feliz Cumpleaños ${birthday.nombre}!* 🎂🎉\n\n` +
-                   `Que Dios te bendiga grandemente en este día tan especial. ` +
-                   `Que tengas un año lleno de alegría, salud y bendiciones. 🙏✨\n\n` +
-                   `¡Celebramos contigo este día! 🎊\n\n` +
-                   `Con cariño,\n` +
-                   `Familia AETOS 💛`;
-    
-    navigator.clipboard.writeText(mensaje).then(() => {
-      alert(`✅ Mensaje de cumpleaños copiado para ${birthday.nombre}. Pégalo en WhatsApp.`);
-    }).catch(() => {
-      alert('❌ Error al copiar mensaje.');
-    });
+    const name = birthday.fullName || birthday.nombre || '';
+    const raw = `🎉🎂 *¡Feliz Cumpleaños ${name}!* 🎂🎉\n\n` +
+                `Que Dios te bendiga grandemente en este día tan especial. ` +
+                `Que tengas un año lleno de alegría, salud y bendiciones. 🙏✨\n\n` +
+                `¡Celebramos contigo este día! 🎊\n\n` +
+                `Con cariño,\n` +
+                `Familia AETOS 💛`;
+    const mensaje = raw.normalize('NFC');
+
+    const phone = this.normalizePhone(birthday?.celular);
+    if (phone) {
+      this.openWhatsAppFallback(mensaje, name, phone);
+      return;
+    }
+
+    const shareApi = (navigator as any).share;
+    if (shareApi) {
+      shareApi.call(navigator, { title: 'Feliz Cumpleaños', text: mensaje })
+        .then(() => this.showToast('Mensaje listo para compartir', 'success'))
+        .catch(() => this.openWhatsAppFallback(mensaje, name));
+      return;
+    }
+    this.openWhatsAppFallback(mensaje, name);
+  }
+
+  private openWhatsAppFallback(mensaje: string, name: string, phone?: string): void {
+    const base = 'https://api.whatsapp.com/send';
+    const qs = phone
+      ? `?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(mensaje)}&type=phone_number&app_absent=0`
+      : `?text=${encodeURIComponent(mensaje)}&app_absent=0`;
+    const url = base + qs;
+    try {
+      window.open(url, '_blank');
+      this.showToast('Abriendo WhatsApp…', 'success');
+    } catch {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(mensaje)
+          .then(() => this.showToast(`Mensaje copiado para ${name}`, 'success'))
+          .catch(() => this.showToast('No se pudo compartir ni copiar el mensaje', 'error'));
+      } else {
+        this.showToast('No se pudo compartir el mensaje', 'error');
+      }
+    }
+  }
+
+  private normalizePhone(raw: any): string {
+    if (!raw) return '';
+    const digits = String(raw).replace(/\D/g, '');
+    if (!digits || digits.length < 8) return '';
+    if (digits.length === 9) return '51' + digits;
+    return digits;
   }
   
   verifyActiveMeetingPanel(): void {

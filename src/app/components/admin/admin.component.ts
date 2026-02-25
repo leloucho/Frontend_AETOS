@@ -217,7 +217,7 @@ import * as QRCode from 'qrcode';
                 
                 <div class="flex flex-wrap gap-6">
                   <button 
-                    *ngIf="getProgramStatus(prog) !== 'past'" 
+                    *ngIf="getProgramStatus(prog) === 'upcoming'" 
                     (click)="editProgram(prog)" 
                     class="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2">
                     <span class="text-lg">✏️</span>
@@ -225,6 +225,7 @@ import * as QRCode from 'qrcode';
                   </button>
                   
                   <button 
+                    *ngIf="getProgramStatus(prog) === 'upcoming'"
                     (click)="shareToWhatsApp(prog)" 
                     class="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 sm:px-4 py-2 rounded-md hover:from-green-600 hover:to-green-700 transition font-semibold flex items-center justify-center gap-2 shadow">
                     <span class="text-lg">📱</span>
@@ -1465,7 +1466,11 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   shareToWhatsApp(program: any): void {
-    const fechaFormateada = new Date(program.weekStart).toLocaleDateString('es-PE', {
+    const [y, m, d] = String(program.weekStart || '').split('-').map(Number);
+    const localDate = (Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d))
+      ? new Date(y, (m || 1) - 1, d || 1)
+      : new Date(program.weekStart);
+    const fechaFormateada = localDate.toLocaleDateString('es-PE', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
 

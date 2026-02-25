@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -15,12 +15,12 @@ import { SidebarComponent } from '../layout/sidebar.component';
       <app-sidebar></app-sidebar>
       
       <!-- Contenido Principal -->
-      <div class="flex-1 lg:pl-64 pl-0 bg-gradient-to-br from-blue-900 to-purple-900">
+      <div class="flex-1 w-full pl-0 lg:pl-64 bg-gradient-to-br from-blue-900 to-purple-900">
       
       
-      <div class="container mx-auto py-8 px-4 sm:px-8 flex flex-col items-center justify-center min-h-[calc(100vh-80px)]">
+      <div class="mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col items-center justify-center min-h-[calc(100vh-80px)] w-full">
         
-        <div *ngIf="!activeMeeting" class="bg-white p-12 rounded-2xl shadow-2xl text-center">
+        <div *ngIf="!activeMeeting" class="bg-white p-4 sm:p-8 md:p-12 rounded-2xl shadow-2xl text-center">
           <div class="text-6xl mb-4">⚠️</div>
           <h2 class="text-3xl font-bold text-gray-800 mb-4">No hay reunión activa</h2>
           <p class="text-gray-600 mb-6">Si el programa está en curso, activa el QR desde aquí</p>
@@ -35,7 +35,7 @@ import { SidebarComponent } from '../layout/sidebar.component';
           </div>
         </div>
 
-        <div *ngIf="activeMeeting" class="bg-white p-6 sm:p-12 rounded-2xl shadow-2xl max-w-2xl mx-auto">
+        <div *ngIf="activeMeeting" class="bg-white p-4 sm:p-8 md:p-12 rounded-2xl shadow-2xl">
           <div class="text-center mb-8">
             <h2 class="text-3xl font-bold text-gray-800 mb-2">Código QR</h2>
             <p class="text-gray-600">Escanea para Marcar Asistencia</p>
@@ -43,7 +43,7 @@ import { SidebarComponent } from '../layout/sidebar.component';
 
           <!-- QR Code Canvas -->
           <div class="flex justify-center mb-6">
-            <div class="bg-gray-50 p-4 sm:p-8 rounded-xl border-4 border-blue-500">
+            <div class="bg-gray-50 p-4 sm:p-6 md:p-8 rounded-xl border-4 border-blue-500 w-full max-w-sm sm:max-w-md mx-auto">
               <canvas #qrCanvas class="max-w-full"></canvas>
             </div>
           </div>
@@ -112,6 +112,7 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
   activeMeeting: any = null;
   attendanceCount: number = 0;
   attendanceList: any[] = [];
+  qrSize: number = 300;
   private refreshInterval: any;
   private triedAutoCreate = false;
 
@@ -123,12 +124,28 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
       this.router.navigate(['/dashboard']);
       return;
     }
-    this.loadActiveMeeting();
+    this.ensureActiveMeeting();
     this.startAutoRefresh();
   }
 
   ngAfterViewInit(): void {
     // QR se genera después de cargar la reunión
+  }
+
+  private ensureActiveMeeting(): void {
+    this.triedAutoCreate = true;
+    this.authService.createMeeting(false).subscribe({
+      next: (data: any) => {
+        this.activeMeeting = data;
+        this.generateQR(data.tokenQr);
+        this.loadAttendanceCount();
+        this.loadAttendances();
+      },
+      error: () => {
+        // Si no se puede crear (por horario), intentar cargar si existiera alguna activa
+        this.loadActiveMeeting();
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -161,19 +178,18 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
 
   generateQR(token: string): void {
     if (!this.qrCanvas) {
-      // Si el canvas aún no está listo, esperar un momento
       setTimeout(() => this.generateQR(token), 100);
       return;
     }
 
+    this.qrSize = this.computeQrSize();
     const canvas = this.qrCanvas.nativeElement;
     
-    // Generar QR con el token
     QRCode.toCanvas(canvas, token, {
-      width: 400,
+      width: this.qrSize,
       margin: 2,
       color: {
-        dark: '#1e3a8a',  // Azul oscuro
+        dark: '#1e3a8a',
         light: '#ffffff'
       },
       errorCorrectionLevel: 'H'
@@ -182,6 +198,23 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
         console.error('Error generando QR:', error);
       }
     });
+  }
+
+  @HostListener('window:resize')
+  onResize(): void { this.redrawQR(); }
+
+  private computeQrSize(): number {
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const size = Math.min(Math.floor(vw * 0.9), 420);
+    return Math.max(size, 220);
+  }
+
+  private redrawQR(): void {
+    const newSize = this.computeQrSize();
+    if (newSize !== this.qrSize && this.activeMeeting?.tokenQr) {
+      this.qrSize = newSize;
+      this.generateQR(this.activeMeeting.tokenQr);
+    }
   }
 
   loadAttendanceCount(): void {
@@ -210,7 +243,7 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
 
   activateQr(silent: boolean): void {
     this.triedAutoCreate = true;
-    this.authService.createMeeting().subscribe({
+    this.authService.createMeeting(!silent).subscribe({
       next: (data: any) => {
         this.activeMeeting = data;
         this.generateQR(data.tokenQr);
@@ -241,39 +274,11 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
       next: (data: any) => {
         this.attendanceList = data.attendances || [];
         if (data.expired === true) {
-          this.verifyProgramAndMaybeClose();
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  private verifyProgramAndMaybeClose(): void {
-    this.authService.getAllPrograms().subscribe({
-      next: (programs: any[]) => {
-        const now = new Date();
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        const hasActiveNow = (programs || []).some(prog => {
-          if (!prog?.weekStart || !prog?.hora || !prog?.horaFin) return false;
-          const [y, m, d] = prog.weekStart.split('-').map(Number);
-          const progDate = new Date(y, m - 1, d);
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          if (progDate.getTime() !== today.getTime()) return false;
-          const [hi, mi] = prog.hora.split(':').map(Number);
-          const [hf, mf] = prog.horaFin.split(':').map(Number);
-          const start = hi * 60 + mi;
-          const end = hf * 60 + mf;
-          return currentMinutes >= start && currentMinutes <= end;
-        });
-        if (!hasActiveNow) {
           this.activeMeeting = null;
           alert('✅ El programa ha finalizado. QR desactivado.');
         }
       },
-      error: () => {
-        this.activeMeeting = null;
-        alert('✅ El programa ha finalizado. QR desactivado.');
-      }
+      error: () => {}
     });
   }
 

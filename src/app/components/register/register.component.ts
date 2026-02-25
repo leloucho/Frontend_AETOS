@@ -53,7 +53,7 @@ import { AuthService } from '../../services/auth.service';
           </div>
           
         
-          <input type="text" [(ngModel)]="user.fechaNacimiento" name="fechaNacimiento" placeholder="DD/MM/YYYY"
+          <input type="text" [(ngModel)]="user.fechaNacimiento" name="fechaNacimiento" placeholder="DD/MM/YYYY - Nacimiento"
                  inputmode="numeric" maxlength="10" (input)="formatBirthdate($event)" (keydown)="handleBirthdateKeydown($event)"
                  autocomplete="bday" autocapitalize="off" spellcheck="false"
                  class="w-full h-11 p-2 text-sm border rounded focus:ring-2 focus:ring-blue-500 bg-white" required>
