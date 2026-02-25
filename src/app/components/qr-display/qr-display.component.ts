@@ -134,7 +134,7 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
 
   private ensureActiveMeeting(): void {
     this.triedAutoCreate = true;
-    this.authService.createMeeting(false).subscribe({
+    this.authService.createMeeting(true).subscribe({
       next: (data: any) => {
         this.activeMeeting = data;
         this.generateQR(data.tokenQr);
@@ -142,17 +142,7 @@ export class QrDisplayComponent implements OnInit, AfterViewInit {
         this.loadAttendances();
       },
       error: () => {
-        this.authService.createMeeting(true).subscribe({
-          next: (data: any) => {
-            this.activeMeeting = data;
-            this.generateQR(data.tokenQr);
-            this.loadAttendanceCount();
-            this.loadAttendances();
-          },
-          error: () => {
-            this.loadActiveMeeting();
-          }
-        });
+        this.loadActiveMeeting();
       }
     });
   }

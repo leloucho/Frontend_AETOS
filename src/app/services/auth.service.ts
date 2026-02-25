@@ -80,7 +80,7 @@ export class AuthService {
     });
   }
 
-  createMeeting(force: boolean = false): Observable<any> {
+  createMeeting(force: boolean = true): Observable<any> {
     return this.http.post(`${this.apiUrl}/leader/meetings`, { force }, { headers: this.getHeaders() });
   }
 
