@@ -1477,6 +1477,13 @@ export class AdminComponent implements OnInit, OnDestroy {
     let texto = '🔔 *PROGRAMA AETOS* 🔔\n\n';
     texto += '📅 *Fecha:* ' + fechaFormateada + '\n';
     texto += '🕐 *Hora:* ' + program.hora + ' - ' + program.horaFin + '\n';
+
+    const base = (typeof window !== 'undefined' && (window as any).location && (window as any).location.origin)
+      ? (window as any).location.origin
+      : 'https://harmonious-choux-a59a28.netlify.app';
+    const scanUrl = `${base}/scanner?cam=1`;
+    texto += '🔗 *Marca tu asistencia:* ' + scanUrl + '\n';
+
     if (program.location) {
       texto += '📍 *Lugar:* ' + program.location.name + '\n';
       if (program.location.googleMapsUrl) texto += '🗺️ ' + program.location.googleMapsUrl + '\n';

@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -44,6 +44,12 @@ import QRCode from 'qrcode';
                     [class.bg-gray-200]="useCameraMode"
                     class="px-4 sm:px-6 py-2 rounded-lg font-semibold transition text-sm sm:text-base">
               ⌨️ Ingresar Manualmente
+            </button>
+          </div>
+
+          <div *ngIf="useCameraMode && !hasPermission" class="p-4 sm:p-6">
+            <button (click)="activateCamera()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold shadow hover:bg-blue-700">
+              📷 Activar Cámara
             </button>
           </div>
 
@@ -168,6 +174,12 @@ export class ScannerComponent implements OnInit {
 
   ngOnInit(): void {
     this.isLider = this.authService.isLider();
+    // Activar cámara automáticamente si viene con ?cam (o openCamera)
+    const cam = (this as any).route?.snapshot?.queryParamMap?.get('cam') || (this as any).route?.snapshot?.queryParamMap?.get('openCamera');
+    if (cam !== null) {
+      this.useCameraMode = true;
+      setTimeout(() => this.activateCamera(), 100);
+    }
     if (this.isLider) {
       this.checkExistingActiveMeeting();
     }
@@ -196,6 +208,14 @@ export class ScannerComponent implements OnInit {
       this.error = 'Se necesita permiso de cámara para escanear';
       this.useCameraMode = false;
     }
+  }
+
+  activateCamera(): void {
+    this.useCameraMode = false;
+    setTimeout(() => {
+      this.error = '';
+      this.useCameraMode = true;
+    }, 0);
   }
 
   onCodeScanned(result: string): void {
