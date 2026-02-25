@@ -272,7 +272,7 @@ export class ScannerComponent implements OnInit {
   }
 
   createNewMeeting(): void {
-    this.authService.createMeeting().subscribe({
+    this.authService.createMeeting(true).subscribe({
       next: (data: any) => {
         this.activeMeeting = data;
         this.hasActiveQR = true;

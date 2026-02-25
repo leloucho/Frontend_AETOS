@@ -696,7 +696,7 @@ import * as QRCode from 'qrcode';
           <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <h4 class="text-md font-bold text-gray-800 mb-3 flex items-center gap-2">
               <span class="text-lg">📅</span>
-              Información Básica
+              Lugar y Fecha
             </h4>
             <div class="space-y-3">
               <div>
@@ -861,7 +861,7 @@ import * as QRCode from 'qrcode';
               Cancelar
             </button>
             <button type="submit" class="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-medium shadow-md">
-              {{ program.id ? '💾 Actualizar' : '✨ Crear' }} Programa
+              {{ program.id ? '💾 Actualizar' : '✨ Crear' }}
             </button>
           </div>
         </form>
@@ -1871,7 +1871,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   createMeeting(): void {
     console.log('Creando reunión...');
-    this.authService.createMeeting().subscribe({
+    this.authService.createMeeting(true).subscribe({
       next: (data: any) => {
         console.log('Reunión creada:', data);
         this.activeMeeting = data;
