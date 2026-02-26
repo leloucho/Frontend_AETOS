@@ -65,6 +65,7 @@ import QRCode from 'qrcode';
                 *ngIf="availableDevices && availableDevices.length > 0"
                 [device]="currentDevice"
                 [formats]="allowedFormats"
+                [autostart]="hasPermission"
                 (scanSuccess)="onCodeScanned($event)"
                 (camerasFound)="onCamerasFound($event)"
                 (permissionResponse)="onPermissionResponse($event)"
@@ -170,12 +171,12 @@ export class ScannerComponent implements OnInit {
   attendanceList: any[] = [];
   private qrPolling: any = null;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.isLider = this.authService.isLider();
     // Activar cámara automáticamente si viene con ?cam (o openCamera)
-    const cam = (this as any).route?.snapshot?.queryParamMap?.get('cam') || (this as any).route?.snapshot?.queryParamMap?.get('openCamera');
+    const cam = this.route.snapshot.queryParamMap.get('cam') || this.route.snapshot.queryParamMap.get('openCamera');
     if (cam !== null) {
       this.useCameraMode = true;
       setTimeout(() => this.activateCamera(), 100);
@@ -187,12 +188,11 @@ export class ScannerComponent implements OnInit {
 
   onCamerasFound(devices: MediaDeviceInfo[]): void {
     this.availableDevices = devices;
-    this.hasPermission = true;
 
     // Seleccionar cámara trasera si está disponible
     const backCamera = devices.find(device => 
-      device.label.toLowerCase().includes('back') || 
-      device.label.toLowerCase().includes('trasera')
+      (device.label || '').toLowerCase().includes('back') || 
+      (device.label || '').toLowerCase().includes('trasera')
     );
     this.currentDevice = backCamera || devices[0];
   }
@@ -206,16 +206,29 @@ export class ScannerComponent implements OnInit {
     this.hasPermission = hasPermission;
     if (!hasPermission) {
       this.error = 'Se necesita permiso de cámara para escanear';
-      this.useCameraMode = false;
+    } else {
+      this.error = '';
     }
   }
 
-  activateCamera(): void {
-    this.useCameraMode = false;
-    setTimeout(() => {
-      this.error = '';
-      this.useCameraMode = true;
-    }, 0);
+  async activateCamera(): Promise<void> {
+    this.error = '';
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        this.error = 'Tu navegador no soporta cámara o está bloqueada.';
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } }
+      });
+      stream.getTracks().forEach(t => t.stop());
+      this.hasPermission = true;
+      this.useCameraMode = false;
+      setTimeout(() => { this.useCameraMode = true; }, 0);
+    } catch (e) {
+      this.hasPermission = false;
+      this.error = 'Permiso de cámara denegado o no disponible. Revisa los permisos del navegador.';
+    }
   }
 
   onCodeScanned(result: string): void {
