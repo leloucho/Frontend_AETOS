@@ -53,7 +53,7 @@ import { interval, Subscription } from 'rxjs';
         <div *ngFor="let resource of resources" class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
           <div class="relative h-48 sm:h-64 bg-gray-100 flex items-center justify-center">
             <img 
-              [src]="getThumbnailUrl(resource.rutaPortada)" 
+              [src]="thumbnails[resource.id]"
               [alt]="resource.nombre"
               class="max-w-full max-h-full object-contain"
               (error)="onImageError($event)">
@@ -232,6 +232,7 @@ import { interval, Subscription } from 'rxjs';
 })
 export class ResourcesComponent implements OnInit, OnDestroy {
   resources: Resource[] = [];
+  thumbnails: { [id: number]: string } = {};
   viewMode: 'all' | 'mine' = 'all';
   currentUserEmail: string = '';
   isLeader: boolean = false;
@@ -275,6 +276,7 @@ export class ResourcesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.stopPolling();
+    this.revokeThumbnails();
   }
 
   private startPolling() {
@@ -294,11 +296,36 @@ export class ResourcesComponent implements OnInit, OnDestroy {
     }
   }
 
+  private fetchThumbnails(list: Resource[]): void {
+    for (const r of list) {
+      if (!r || !r.rutaPortada) continue;
+      this.resourceService.getThumbnailBlob(r.rutaPortada).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          this.thumbnails[r.id] = url;
+        },
+        error: () => {
+          // Silencioso: el template mostrará placeholder en onImageError si no hay miniatura
+        }
+      });
+    }
+  }
+
+  private revokeThumbnails(): void {
+    try {
+      Object.values(this.thumbnails || {}).forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+    } finally {
+      this.thumbnails = {};
+    }
+  }
+
   loadResources() {
     this.viewMode = 'all';
     this.resourceService.getAllResources().subscribe({
       next: (data) => {
         this.resources = data;
+        this.revokeThumbnails();
+        this.fetchThumbnails(this.resources);
       },
       error: (error) => {
         console.error('Error cargando recursos:', error);
@@ -311,6 +338,8 @@ export class ResourcesComponent implements OnInit, OnDestroy {
     this.resourceService.getMyResources().subscribe({
       next: (data) => {
         this.resources = data;
+        this.revokeThumbnails();
+        this.fetchThumbnails(this.resources);
       },
       error: (error) => {
         console.error('Error cargando mis recursos:', error);

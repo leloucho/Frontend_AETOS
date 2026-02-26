@@ -99,6 +99,16 @@ export class ResourceService {
     });
   }
 
+  getThumbnailBlob(filename: string): Observable<Blob> {
+    const token = localStorage.getItem('jwt_token');
+    return this.http.get(`${this.apiUrl}/thumbnail/${filename}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      responseType: 'blob'
+    });
+  }
+
   getThumbnailUrl(filename: string): string {
     return `${this.apiUrl}/thumbnail/${filename}`;
   }
