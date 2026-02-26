@@ -361,7 +361,6 @@ export class ScannerComponent implements OnInit {
         this.attendanceList = data.attendances || [];
         if (data.expired === true) {
           this.endActiveMeetingUI();
-          alert('✅ El programa ha finalizado. QR desactivado.');
         }
       }
     });

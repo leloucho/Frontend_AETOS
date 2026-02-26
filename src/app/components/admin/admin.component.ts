@@ -1815,7 +1815,13 @@ export class AdminComponent implements OnInit, OnDestroy {
     const programDate = new Date(year, month - 1, day);
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
-    return programDate < today;
+    if (programDate < today) return true;
+    if (programDate.getTime() !== today.getTime()) return false;
+    
+    if (!prog.horaFin) return false;
+    const [endHour, endMin] = prog.horaFin.split(':').map(Number);
+    const endTime = new Date(year, month - 1, day, endHour, endMin);
+    return now > endTime;
   }
 
   isProgramActive(prog: any): boolean {
