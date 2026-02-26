@@ -62,11 +62,11 @@ import QRCode from 'qrcode';
           <div *ngIf="useCameraMode" class="p-4 sm:p-6">
             <div class="bg-black rounded-lg overflow-hidden mb-4" style="max-height: 350px;">
               <zxing-scanner
-                *ngIf="availableDevices && availableDevices.length > 0"
                 [device]="currentDevice"
                 [formats]="allowedFormats"
                 [autostart]="hasPermission"
                 (scanSuccess)="onCodeScanned($event)"
+                (scanError)="onScanError($event)"
                 (camerasFound)="onCamerasFound($event)"
                 (permissionResponse)="onPermissionResponse($event)"
                 class="w-full">
@@ -187,14 +187,14 @@ export class ScannerComponent implements OnInit {
   }
 
   onCamerasFound(devices: MediaDeviceInfo[]): void {
-    this.availableDevices = devices;
-
-    // Seleccionar cámara trasera si está disponible
-    const backCamera = devices.find(device => 
+    console.log('[Scanner] camerasFound:', devices?.length, devices);
+    this.availableDevices = devices || [];
+    const backCamera = (devices || []).find(device => 
       (device.label || '').toLowerCase().includes('back') || 
+      (device.label || '').toLowerCase().includes('environment') ||
       (device.label || '').toLowerCase().includes('trasera')
     );
-    this.currentDevice = backCamera || devices[0];
+    this.currentDevice = backCamera || (devices && devices[0]);
   }
 
   onDeviceSelectChange(event: any): void {
@@ -203,19 +203,23 @@ export class ScannerComponent implements OnInit {
   }
 
   onPermissionResponse(hasPermission: boolean): void {
+    console.log('[Scanner] permissionResponse:', hasPermission);
     this.hasPermission = hasPermission;
-    if (!hasPermission) {
-      this.error = 'Se necesita permiso de cámara para escanear';
-    } else {
+    if (hasPermission) {
       this.error = '';
+      this.ensureEnumerateDevices();
+    } else {
+      this.error = 'Se necesita permiso de cámara para escanear';
     }
   }
 
   async activateCamera(): Promise<void> {
+    console.log('[Scanner] activateCamera gesture');
     this.error = '';
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         this.error = 'Tu navegador no soporta cámara o está bloqueada.';
+        console.error('[Scanner] getUserMedia not available');
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -225,9 +229,31 @@ export class ScannerComponent implements OnInit {
       this.hasPermission = true;
       this.useCameraMode = false;
       setTimeout(() => { this.useCameraMode = true; }, 0);
+      this.ensureEnumerateDevices();
     } catch (e) {
       this.hasPermission = false;
       this.error = 'Permiso de cámara denegado o no disponible. Revisa los permisos del navegador.';
+      console.error('[Scanner] getUserMedia error:', e);
+    }
+  }
+
+  onScanError(err: any): void {
+    console.error('[Scanner] scanError:', err);
+  }
+
+  private async ensureEnumerateDevices(): Promise<void> {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videos = devices.filter(d => d.kind === 'videoinput') as MediaDeviceInfo[];
+      console.log('[Scanner] enumerateDevices video inputs:', videos?.length, videos);
+      if (videos.length > 0) {
+        this.availableDevices = videos;
+        const back = videos.find(d => (d.label || '').toLowerCase().includes('back') || (d.label || '').toLowerCase().includes('environment') || (d.label || '').toLowerCase().includes('trasera'));
+        this.currentDevice = back || videos[0];
+      }
+    } catch (e) {
+      console.error('[Scanner] enumerateDevices error:', e);
     }
   }
 
