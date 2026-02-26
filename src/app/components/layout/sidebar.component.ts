@@ -239,7 +239,7 @@ export class SidebarComponent implements OnInit {
       next: (userData) => {
         this.userName = userData.nombre || 'Usuario';
         this.userRole = this.isAdmin ? 'Administrador' : (this.isLider ? 'Líder' : 'Miembro');
-        this.userPhotoUrl = userData.photoUrl || '';
+        this.userPhotoUrl = this.resolvePhotoUrl(userData.photoUrl || '');
       },
       error: (err) => console.error('Error loading user data', err)
     });
@@ -276,5 +276,13 @@ export class SidebarComponent implements OnInit {
       return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
     }
     return this.userName.charAt(0).toUpperCase();
+  }
+
+  private resolvePhotoUrl(url: string): string {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/api/')) return url;
+    if (url.startsWith('/uploads/')) return '/api' + url;
+    return url;
   }
 }

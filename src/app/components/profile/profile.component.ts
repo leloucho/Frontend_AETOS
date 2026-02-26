@@ -318,6 +318,7 @@ export class ProfileComponent implements OnInit {
     this.authService.getUserProfile().subscribe({
       next: (data: any) => {
         this.user = data;
+        this.user.photoUrl = this.resolvePhotoUrl(data.photoUrl || '');
         this.originalUser = { ...data };
       },
       error: (err: any) => {
@@ -498,8 +499,9 @@ export class ProfileComponent implements OnInit {
     this.authService.uploadProfilePhoto(file).subscribe({
       next: (response: any) => {
         this.uploadingPhoto = false;
-        this.user.photoUrl = response.photoUrl;
-        this.originalUser.photoUrl = response.photoUrl;
+        const resolved = this.resolvePhotoUrl(response.photoUrl || '');
+        this.user.photoUrl = resolved;
+        this.originalUser.photoUrl = resolved;
         this.successMessage = '✅ Foto de perfil actualizada exitosamente';
         setTimeout(() => this.successMessage = '', 3000);
         this.closeCropperModal();
@@ -511,6 +513,14 @@ export class ProfileComponent implements OnInit {
         console.error('Error uploading photo:', err);
       }
     });
+  }
+
+  private resolvePhotoUrl(url: string): string {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/api/')) return url;
+    if (url.startsWith('/uploads/')) return '/api' + url;
+    return url;
   }
 
 }
