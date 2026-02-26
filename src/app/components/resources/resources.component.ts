@@ -305,7 +305,7 @@ export class ResourcesComponent implements OnInit, OnDestroy {
           this.thumbnails[r.id] = url;
         },
         error: () => {
-          // Silencioso: el template mostrará placeholder en onImageError si no hay miniatura
+          this.thumbnails[r.id] = this.placeholderFor(r);
         }
       });
     }
@@ -317,6 +317,12 @@ export class ResourcesComponent implements OnInit, OnDestroy {
     } finally {
       this.thumbnails = {};
     }
+  }
+
+  private placeholderFor(r: Resource): string {
+    const ext = ((r?.nombreArchivo || '').split('.').pop() || 'FILE').toUpperCase();
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns='http://www.w3.org/2000/svg' width='300' height='400'>\n<rect width='300' height='400' fill='#eeeeee'/>\n<text x='150' y='200' font-size='72' fill='#999999' text-anchor='middle' dominant-baseline='central'>${ext}</text>\n</svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
 
   loadResources() {
