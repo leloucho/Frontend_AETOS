@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://courageous-gayleen-aetos-org-6a4b6cf0.koyeb.app/api/:path*"
+      "destination": "http://15.228.225.233:8080/api/:path*"
     },
     {
       "source": "/(.*)",
