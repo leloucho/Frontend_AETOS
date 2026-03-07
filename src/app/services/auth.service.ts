@@ -6,10 +6,10 @@ import { Observable, tap } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = '/api';
+  private apiUrl = 'http://15.228.225.233:8080/api';
   private tokenKey = 'jwt_token';
   private roleKey = 'user_role';
-
+  
   constructor(private http: HttpClient) {}
 
   register(data: any): Observable<any> {
